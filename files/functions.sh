@@ -10,7 +10,7 @@ function register_hook {
         exit 1
     fi
     interface=$1
-    
+
     hostapd_cli -i$interface -a/usr/lib/hass/push_event.sh &
 }
 
@@ -21,21 +21,21 @@ function post {
         exit 1
     fi
     payload=$1
-    
+
     config_get hass_host global host
-    config_get hass_pw global pw
-    
+    config_get hass_token global token
+
     resp=$(curl "$hass_host/api/services/device_tracker/see" -sfSX POST \
         -H 'Content-Type: application/json' \
-        -H "X-HA-Access: $hass_pw" \
+        -H "Authorization: Bearer $hass_token" \
         --data-binary "$payload" 2>&1)
-    
+
     if [ $? -eq 0 ]; then
         level=debug
     else
         level=error
     fi
-    
+
     logger -t $0 -p $level "post response $resp"
 }
 
@@ -49,7 +49,7 @@ function build_payload {
     mac=$1
     host=$2
     consider_home=$3
-    
+
     echo "{\"mac\":\"$mac\",\"host_name\":\"$host\",\"consider_home\":\"$consider_home\",\"source_type\":\"router\"}"
 }
 
@@ -72,11 +72,11 @@ function push_event {
     iface=$1
     msg=$2
     mac=$3
-    
+
     config_get hass_timeout_conn global timeout_conn
     config_get hass_timeout_disc global timeout_disc
-    
-    case $msg in 
+
+    case $msg in
         "AP-STA-CONNECTED")
             timeout=$hass_timeout_conn
             ;;
